@@ -1,5 +1,14 @@
 const global = {
     currentPage : window.location.pathname,
+    search : {
+        term :'',
+        type :'',
+        page : 1,
+        totalPages :1,
+        totalResults:0
+    },
+    API_KEY : '502bdb9b7bb9ec5a4307f1606964d6c1',
+    API_URL : 'https://api.themoviedb.org/3/',
 };
 
 async function displayPopularMovies(){
@@ -224,6 +233,78 @@ function createShowDetailsDOM(ele){
         show_details_block.appendChild(div);
 }
 
+
+
+//search results
+function displaysesrchResults(results){
+  clearPreviousResults();
+  results.forEach(ele => {
+    const div = document.createElement('div');
+    div.classList.add('card');
+    div.innerHTML=`
+    <a href="${global.search.type}-details.html?id=${ele.id}">
+            <img src="https://image.tmdb.org/t/p/w500${ele.poster_path}" class="card-img-top" alt="" />
+          </a>
+          <div class="card-body">
+          ${
+           global.search.type === 'movie' ? `<h5 class="card-title">${ele.title}</h5>` :`<h5 class="card-title">${ele.name}</h5>`
+          }
+            <p class="card-text">
+            ${
+              global.search.type === 'movie' ? `<small class="text-muted">Release: ${ele.release_date}</small>` : `<small class="text-muted">Release: ${ele.first_air_date}</small>`
+             }
+            </p>
+          </div>
+    `;
+
+    document.querySelector('#search-results-heading').innerHTML= 
+    `<h2> ${results.length} of ${global.search.totalResults} for a ${global.search.term}</h2>`;
+    document.querySelector('.grid').appendChild(div);
+    
+  });
+//display pagination for search 
+displayPagination();
+}
+
+function displayPagination(){
+  const div = document.createElement('div');
+  div.classList.add('pagination');
+  div.innerHTML=`<button class="btn btn-primary" id="prev">Prev</button>
+          <button class="btn btn-primary" id="next">Next</button>
+          <div class="page-counter">Page ${global.search.page} of ${global.search.totalPages}</div>`;
+  document.querySelector('#pagination').appendChild(div);
+
+  //Disable  prev button if on first page 
+  if(global.search.page ===1){
+    document.querySelector('#prev').disabled = true;
+  }
+  //Disable  next button if on last page 
+  if(global.search.page === global.search.totalPages){
+    document.querySelector('#next').disabled = true;
+    }
+    document.querySelector('#next').addEventListener('click',async()=>
+    {
+      global.search.page++;
+      const {results,total_pages} = await seachAPIData();
+      displaysesrchResults(results);
+    });
+    document.querySelector('#prev').addEventListener('click',async() =>{
+      global.search.page--;
+      const {results,total_pages} = await seachAPIData();
+      displaysesrchResults(results);
+
+    })
+
+
+}
+
+function clearPreviousResults(){
+  document.querySelector('#search-results').innerHTML='';
+  document.querySelector('#search-results-heading').innerHTML='';
+  document.querySelector('#pagination').innerHTML='';
+
+}
+
 function displayBackgrounfImage(type,bg_path){
 
     const overlayDiv = document.createElement('div');
@@ -245,6 +326,52 @@ function displayBackgrounfImage(type,bg_path){
         document.querySelector('#show-details').appendChild(overlayDiv);
 
     }
+}
+
+
+//search Page 
+
+async function search(){
+    const queryString = window.location.search;
+    const  urlParams = new URLSearchParams(queryString);
+
+
+    global.search.type =urlParams.get('type');
+    global.search.term =urlParams.get('search-term');
+
+
+    if (global.search.term !== '' && global.search.term !== null){
+        const {results, total_pages, page,total_results} = await seachAPIData();
+
+        global.search.page = page;
+        global.search.totalPages= total_pages;
+        global.search.totalResults=total_results;
+
+
+        if(results.length === 0){
+          showAlert('no results Found');
+        }else{
+            console.log(results);
+            //add to Dom 
+            displaysesrchResults(results);
+         // document.querySelector('#search-term').value ='';
+
+        }
+    }else{
+        showAlert('please enter something');
+    }
+
+}
+
+
+function showAlert(mesasge,className = 'error'){
+    const alertEl = document.createElement('div');
+    alertEl.classList.add('alert',className);
+    alertEl.appendChild(document.createTextNode(mesasge));
+    document.querySelector('#alert').appendChild(alertEl);
+    
+    setTimeout(()=>alertEl.remove(),2000);
+
 }
 
 //Display Slider Movies 
@@ -312,14 +439,31 @@ function hideSpinner(){
 //fetch data from TMDB API 
 
 async function fetchAPIData(endpoint){
-    const API_KEY ='502bdb9b7bb9ec5a4307f1606964d6c1';
-    const API_URL = 'https://api.themoviedb.org/3/';
-    showSpinner();
 
-    const reponse = await fetch(`${API_URL}${endpoint}?api_key=${API_KEY}& language=en-US`);
+    const api_url = global.API_URL;
+    const api_key = global.API_KEY;
+
+    showSpinner();
+    const reponse = await fetch(`${api_url}${endpoint}?api_key=${api_key}& language=en-US`);
     const data = await reponse.json();
     hideSpinner();
     return data;
+
+}
+
+//search 
+
+async function seachAPIData(){
+    
+    const api_url = global.API_URL;
+    const api_key = global.API_KEY;
+
+    const response = await fetch(`${api_url}search/${global.search.type}?api_key=${api_key}& language=en-US&query=${global.search.term}&page=${global.search.page}`);
+  
+    const data = await response.json();
+
+    return data;
+
 
 }
 
@@ -355,6 +499,7 @@ function init(){
             console.log('TV Details');
             break;
         case '/search.html':
+            search();
             console.log('Search');
             break;        
     }
@@ -365,3 +510,4 @@ function init(){
 //Event Listeners
 
 document.addEventListener('DOMContentLoaded',init);
+
