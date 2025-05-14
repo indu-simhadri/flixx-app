@@ -480,25 +480,25 @@ function hightlightActiveLink(){
 //intialising the APP
 function init(){
     switch(global.currentPage){
-        case '/':
-        case '/index.html':
+        case '/flixx-app/':
+        case '/flixx-app/index.html':
           displayPopularMovies();
           displaySlider();
           console.log('Home');
           break;
-        case '/shows.html':
+        case '/flixx-app/shows.html':
             displayPopularTVShows();
             console.log('Shows');
             break;
-        case '/movie-details.html':
+        case '/flixx-app/movie-details.html':
             displayMovieDetails();
             console.log('Movie Details');
             break;
-        case '/tv-details.html':
+        case '/flixx-app/tv-details.html':
             displayShowDetails();
             console.log('TV Details');
             break;
-        case '/search.html':
+        case '/flixx-app/search.html':
             search();
             console.log('Search');
             break;        
